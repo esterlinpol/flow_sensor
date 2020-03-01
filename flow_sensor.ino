@@ -7,13 +7,12 @@
   ------------------------------------------------------------------------------
   Description: 
   Code for Water flow metter system, built for physics 2 class at Dominico Americano
-  University, Santo Domingo D.R. Connects to ESP8266
+  University, Santo Domingo D.R. Connects to ESP8266 via serial. 
   ------------------------------------------------------------------------------
   License:
   Please see attached LICENSE.txt file for details.
 ------------------------------------------------------------------------------*/
-#include <Wire.h>
-
+int sendvalue;
 const int sensorPin = 2;
 const int measureInterval = 1000;
 volatile int pulseConter;
@@ -44,32 +43,18 @@ void measure()
  {
    frequency = GetFrequency(); 
    flow_Lmin = frequency / factorK;
+   //Multiply to make the value suitable for integer to be sent:
+   sendvalue = flow_Lmin * 1000;
  } 
-
-void requestEvent() 
- {
-    measure();
-    char result[8];
-    dtostrf(flow_Lmin, 6, 2, result);
-    Wire.write(result); // respond with message of 6 bytes
+void setup() {
+  // Begin the Serial at 9600 Baud
+  Serial.begin(115200);
+  attachInterrupt(digitalPinToInterrupt(sensorPin), ISRCountPulse, RISING);
   
- }
-
-void setup()
-{
-   Serial.begin(9600);
-   attachInterrupt(digitalPinToInterrupt(sensorPin), ISRCountPulse, RISING);
-   Wire.begin(8); // join i2c bus with address #8
-   Wire.onRequest(requestEvent);
 }
- 
-void loop()
- {
-   measure();
-    char result[8];
-    dtostrf(flow_Lmin, 6, 2, result);
-    Wire.beginTransmission(7);
-    Wire.write(result); // respond with message of 6 bytes
-    Wire.endTransmission();
-   delay(100);
- }
+
+void loop() {
+  measure();
+  Serial.print(sendvalue); //Write the serial data
+  delay(400);
+}
